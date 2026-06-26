@@ -6,18 +6,36 @@ datasource db {
   provider = "postgresql"
 }
 
-model Capsule {
-  id            String         @id @default(uuid())
-  title         String
-  slug          String         @unique
-  songUrl       String?
-  letter        String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+enum CapsuleStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  ARCHIVED
+}
 
-  timelineItems TimelineItem[]
+enum CheckoutSessionStatus {
+  PENDING
+  PAID
+  CANCELED
+}
+
+model Capsule {
+  id             String               @id @default(uuid())
+  title          String
+  slug           String               @unique
+  status         CapsuleStatus        @default(DRAFT)
+  recipientName  String?
+  occasion       String?
+  songUrl        String?
+  letter         String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  timelineItems  TimelineItem[]
+  checkoutSession CheckoutSession?
 
   @@index([slug])
+  @@index([status])
 }
 
 model TimelineItem {
@@ -33,4 +51,18 @@ model TimelineItem {
 
   @@index([capsuleId])
   @@index([sortOrder])
+}
+
+model CheckoutSession {
+  id          String                @id @default(uuid())
+  capsuleId   String                @unique
+  provider    String                @default("manual")
+  status      CheckoutSessionStatus @default(PENDING)
+  checkoutUrl String
+  amount      Int                   @default(0)
+  currency    String                @default("BRL")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  capsule     Capsule               @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
 }

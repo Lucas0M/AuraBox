@@ -34,11 +34,21 @@ export async function createCapsuleController(
   request: Request,
   response: Response,
 ) {
-  const { title, slug, songUrl, letter, timelineItems } = request.body ?? {};
+  const {
+    title,
+    slug,
+    recipientName,
+    occasion,
+    songUrl,
+    letter,
+    timelineItems,
+  } = request.body ?? {};
 
   const capsule = await capsulesService.createCapsule({
     title,
     slug,
+    recipientName,
+    occasion,
     songUrl,
     letter,
     timelineItems,
@@ -46,3 +56,5 @@ export async function createCapsuleController(
 
   response.status(201).json({ data: capsule });
 }
+
+export const createDraftCapsuleController = createCapsuleController;
