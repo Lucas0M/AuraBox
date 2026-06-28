@@ -2,7 +2,7 @@
 CREATE TYPE "CapsuleStatus" AS ENUM ('DRAFT', 'PENDING_PAYMENT', 'ACTIVE', 'ARCHIVED');
 
 -- CreateEnum
-CREATE TYPE "CheckoutSessionStatus" AS ENUM ('PENDING', 'PAID', 'CANCELED');
+CREATE TYPE "CheckoutSessionStatus" AS ENUM ('PENDING', 'PAID', 'CANCELED', 'EXPIRED');
 
 -- CreateTable
 CREATE TABLE "Capsule" (
@@ -10,6 +10,7 @@ CREATE TABLE "Capsule" (
     "title" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "status" "CapsuleStatus" NOT NULL DEFAULT 'DRAFT',
+    "editToken" TEXT NOT NULL,
     "recipientName" TEXT,
     "occasion" TEXT,
     "songUrl" TEXT,
@@ -37,11 +38,15 @@ CREATE TABLE "TimelineItem" (
 CREATE TABLE "CheckoutSession" (
     "id" TEXT NOT NULL,
     "capsuleId" TEXT NOT NULL,
-    "provider" TEXT NOT NULL DEFAULT 'manual',
+    "provider" TEXT NOT NULL DEFAULT 'abacatepay',
     "status" "CheckoutSessionStatus" NOT NULL DEFAULT 'PENDING',
-    "checkoutUrl" TEXT NOT NULL,
+    "providerChargeId" TEXT,
+    "pixQrCode" TEXT,
+    "pixCopyPaste" TEXT,
     "amount" INTEGER NOT NULL DEFAULT 0,
     "currency" TEXT NOT NULL DEFAULT 'BRL',
+    "expiresAt" TIMESTAMP(3),
+    "paidAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -52,10 +57,16 @@ CREATE TABLE "CheckoutSession" (
 CREATE UNIQUE INDEX "Capsule_slug_key" ON "Capsule"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Capsule_editToken_key" ON "Capsule"("editToken");
+
+-- CreateIndex
 CREATE INDEX "Capsule_slug_idx" ON "Capsule"("slug");
 
 -- CreateIndex
 CREATE INDEX "Capsule_status_idx" ON "Capsule"("status");
+
+-- CreateIndex
+CREATE INDEX "Capsule_editToken_idx" ON "Capsule"("editToken");
 
 -- CreateIndex
 CREATE INDEX "TimelineItem_capsuleId_idx" ON "TimelineItem"("capsuleId");
@@ -65,6 +76,15 @@ CREATE INDEX "TimelineItem_sortOrder_idx" ON "TimelineItem"("sortOrder");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CheckoutSession_capsuleId_key" ON "CheckoutSession"("capsuleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CheckoutSession_providerChargeId_key" ON "CheckoutSession"("providerChargeId");
+
+-- CreateIndex
+CREATE INDEX "CheckoutSession_providerChargeId_idx" ON "CheckoutSession"("providerChargeId");
+
+-- CreateIndex
+CREATE INDEX "CheckoutSession_status_idx" ON "CheckoutSession"("status");
 
 -- AddForeignKey
 ALTER TABLE "TimelineItem" ADD CONSTRAINT "TimelineItem_capsuleId_fkey" FOREIGN KEY ("capsuleId") REFERENCES "Capsule"("id") ON DELETE CASCADE ON UPDATE CASCADE;

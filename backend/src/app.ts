@@ -1,38 +1,45 @@
-import cors from "cors";
 import express from "express";
-import { capsulesRouter } from "./routes/capsules.js";
-import { checkoutRouter } from "./routes/checkout.js";
-import { healthRouter } from "./routes/health.js";
+import cors from "cors";
+import { env } from "./config/env";
+import capsulesRoutes from "./routes/capsules";
+import checkoutRoutes from "./routes/checkout";
+import webhooksRoutes from "./routes/webhooks";
+// import healthRoutes from "./routes/health"; // já existente no seu projeto
 
-export const app = express();
+const app = express();
 
-app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(cors({ origin: env.FRONTEND_URL }));
 
-app.get("/api", (_request, response) => {
-  response.json({
-    service: "AuraBox API",
-    status: "ok",
-    routes: [
-      "GET /health",
-      "GET /api",
-      "GET /api/capsules",
-      "GET /api/capsules/demo",
-      "GET /api/capsules/:slug",
-      "POST /api/capsules/drafts",
-      "POST /api/capsules",
-      "POST /api/checkout/sessions",
-    ],
-  });
-});
+/**
+ * ORDEM IMPORTA AQUI.
+ *
+ * A rota de webhook (/webhooks/abacatepay) precisa do raw body — ver
+ * routes/webhooks.ts — então ela é registrada ANTES do express.json()
+ * global, garantindo que o raw() interno daquela rota capture o stream
+ * intacto antes de qualquer outro parser tocar nele.
+ */
+app.use("/webhooks", webhooksRoutes);
 
-app.use("/health", healthRouter);
-app.use("/api/capsules", capsulesRouter);
-app.use("/api/checkout", checkoutRouter);
+// A partir daqui, todo o resto da API usa JSON normalmente
+app.use(express.json());
 
-app.use((request, response) => {
-  response.status(404).json({
-    error: "Not Found",
-    path: request.path,
-  });
-});
+app.use("/capsules", capsulesRoutes);
+app.use("/checkout", checkoutRoutes);
+// app.use("/health", healthRoutes);
+
+// Handler de erro genérico — captura exceptions não tratadas nos controllers
+// (ex: erros do Prisma, da AbacatePay, do Cloudinary) e evita que o processo
+// quebre ou que stack traces sejam expostos ao cliente.
+app.use(
+  (
+    err: Error,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction
+  ) => {
+    console.error(err);
+    res.status(500).json({ error: "Erro interno no servidor" });
+  }
+);
+
+export default app;

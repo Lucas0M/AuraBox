@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { app } from "./app.js";
 
-const port = Number(process.env.PORT ?? 3333);
+import app from "./app";
+import { env } from "./config/env";
 
-app.listen(port, () => {
-  console.log(`AuraBox backend running on port ${port}`);
+app.listen(env.PORT, () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${env.PORT}`);
 });

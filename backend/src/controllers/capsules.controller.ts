@@ -1,150 +1,109 @@
-import type { Request, Response } from "express";
-import { capsulesService } from "../services/capsules.service.js";
+import { Request, Response } from "express";
+import { capsuleService } from "../services/capsule.service";
+import { uploadService } from "../services/upload.service";
 
-const demoCapsule = {
-  id: "demo-capsule",
-  title: "Capsula Aurora",
-  slug: "capsula-aurora-demo",
-  recipientName: "Isabela",
-  occasion: "Aniversario de namoro",
-  songUrl: "https://example.com/audio-demo.mp3",
-  letter:
-    "Quero guardar neste presente tudo o que a gente construiu e tudo o que ainda vem pela frente.",
-  timelineItems: [
-    {
-      imageUrl: "https://placehold.co/1200x900/png?text=Foto+1",
-      caption: "Nosso primeiro jantar",
-      sortOrder: 0,
-    },
-    {
-      imageUrl: "https://placehold.co/1200x900/png?text=Foto+2",
-      caption: "A viagem que virou memoria",
-      sortOrder: 1,
-    },
-    {
-      imageUrl: "https://placehold.co/1200x900/png?text=Foto+3",
-      caption: "O dia em que tudo fez sentido",
-      sortOrder: 2,
-    },
-  ],
-};
+export class CapsulesController {
+  /**
+   * POST /capsules
+   * Cria a cápsula em DRAFT. Retorna o editToken — o front DEVE
+   * salvar isso localmente, pois é a única vez que ele vem na resposta.
+   */
+  async create(req: Request, res: Response) {
+    const capsule = await capsuleService.create(req.body);
 
-function isNonEmptyString(value: unknown) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function normalizeTimelineItems(value: unknown) {
-  if (!Array.isArray(value)) {
-    return [];
+    return res.status(201).json({
+      capsule,
+      editToken: capsule.editToken,
+      warning:
+        "Guarde o editToken em local seguro — ele é necessário para editar a cápsula e não será mostrado novamente.",
+    });
   }
 
-  const normalizedItems = value
-    .map((item, index) => {
-      if (!item || typeof item !== "object") {
-        return null;
-      }
+  /**
+   * GET /capsules/:slug
+   * Visualização pública — só retorna se status === ACTIVE.
+   */
+  async getPublicBySlug(req: Request, res: Response) {
+    const { slug } = req.params;
+    const capsule = await capsuleService.findPublicBySlug(slug);
 
-      const candidate = item as {
-        imageUrl?: unknown;
-        caption?: unknown;
-        sortOrder?: unknown;
-      };
+    if (!capsule) {
+      return res.status(404).json({ error: "Cápsula não encontrada ou ainda não está ativa" });
+    }
 
-      if (
-        !isNonEmptyString(candidate.imageUrl) ||
-        !isNonEmptyString(candidate.caption)
-      ) {
-        return null;
-      }
-
-      return {
-        imageUrl: String(candidate.imageUrl).trim(),
-        caption: String(candidate.caption).trim(),
-        sortOrder:
-          typeof candidate.sortOrder === "number" ? candidate.sortOrder : index,
-      };
-    })
-    .filter(
-      (
-        item,
-      ): item is { imageUrl: string; caption: string; sortOrder: number } =>
-        item !== null,
-    );
-
-  return normalizedItems;
-}
-
-export function getDemoCapsuleController(
-  _request: Request,
-  response: Response,
-) {
-  response.json({ data: demoCapsule });
-}
-
-export async function listCapsulesController(
-  _request: Request,
-  response: Response,
-) {
-  const capsules = await capsulesService.listCapsules();
-  response.json({ data: capsules });
-}
-
-export async function getCapsuleBySlugController(
-  request: Request,
-  response: Response,
-) {
-  const { slug } = request.params;
-
-  if (typeof slug !== "string") {
-    response.status(400).json({ error: "Invalid slug" });
-    return;
+    return res.json({ capsule });
   }
 
-  const capsule = await capsulesService.getCapsuleBySlug(slug);
+  /**
+   * GET /capsules/:id/manage
+   * Visualização para o dono (qualquer status), autenticado via editToken.
+   * O middleware requireEditToken já validou e populou req.capsule.
+   */
+  async getForManagement(req: Request, res: Response) {
+    const { id } = req.params;
+    const capsule = await capsuleService.findById(id);
 
-  if (!capsule) {
-    response.status(404).json({ error: "Capsule not found" });
-    return;
+    if (!capsule) {
+      return res.status(404).json({ error: "Cápsula não encontrada" });
+    }
+
+    return res.json({ capsule });
   }
 
-  response.json({ data: capsule });
-}
+  /**
+   * PATCH /capsules/:id
+   * Edição autenticada via editToken (middleware requireEditToken).
+   */
+  async update(req: Request, res: Response) {
+    const { id } = req.params;
+    const capsule = await capsuleService.update(id, req.body);
+    return res.json({ capsule });
+  }
 
-export async function createCapsuleController(
-  request: Request,
-  response: Response,
-) {
-  const {
-    title,
-    slug,
-    recipientName,
-    occasion,
-    songUrl,
-    letter,
-    timelineItems,
-  } = request.body ?? {};
+  /**
+   * DELETE /capsules/:id
+   */
+  async delete(req: Request, res: Response) {
+    const { id } = req.params;
+    await capsuleService.delete(id);
+    return res.status(204).send();
+  }
 
-  if (!isNonEmptyString(title) || !isNonEmptyString(letter)) {
-    response.status(400).json({
-      error: "title and letter are required",
+  /**
+   * POST /capsules/:id/timeline-items
+   * Upload de imagem (multipart/form-data, campo "image") + legenda.
+   */
+  async addTimelineItem(req: Request, res: Response) {
+    const { id } = req.params;
+    const { caption, sortOrder } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhuma imagem foi enviada" });
+    }
+
+    if (!caption || typeof caption !== "string") {
+      return res.status(400).json({ error: "A legenda (caption) é obrigatória" });
+    }
+
+    const imageUrl = await uploadService.uploadImage(req.file.buffer, req.file.mimetype);
+
+    const item = await capsuleService.addTimelineItem(id, {
+      imageUrl,
+      caption,
+      sortOrder: sortOrder ? Number(sortOrder) : undefined,
     });
 
-    return;
+    return res.status(201).json({ item });
   }
 
-  const capsule = await capsulesService.createCapsule({
-    title: title.trim(),
-    slug: isNonEmptyString(slug) ? slug.trim() : undefined,
-    recipientName: isNonEmptyString(recipientName)
-      ? recipientName.trim()
-      : undefined,
-    occasion: isNonEmptyString(occasion) ? occasion.trim() : undefined,
-    songUrl: isNonEmptyString(songUrl) ? songUrl.trim() : undefined,
-    letter: letter.trim(),
-    timelineItems: normalizeTimelineItems(timelineItems),
-  });
-
-  response.status(201).json({ data: capsule });
+  /**
+   * DELETE /capsules/:id/timeline-items/:itemId
+   */
+  async removeTimelineItem(req: Request, res: Response) {
+    const { id, itemId } = req.params;
+    await capsuleService.removeTimelineItem(id, itemId);
+    return res.status(204).send();
+  }
 }
 
-export const createDraftCapsuleController = createCapsuleController;
+export const capsulesController = new CapsulesController();

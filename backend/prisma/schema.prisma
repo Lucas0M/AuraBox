@@ -4,12 +4,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum CapsuleStatus {
-  DRAFT
-  PENDING_PAYMENT
-  ACTIVE
+  DRAFT           // criada, ainda não paga
+  PENDING_PAYMENT // checkout iniciado, aguardando confirmação do PIX
+  ACTIVE          // pagamento confirmado, cápsula visível publicamente
   ARCHIVED
 }
 
@@ -17,25 +18,33 @@ enum CheckoutSessionStatus {
   PENDING
   PAID
   CANCELED
+  EXPIRED
 }
 
 model Capsule {
-  id             String               @id @default(uuid())
-  title          String
-  slug           String               @unique
-  status         CapsuleStatus        @default(DRAFT)
-  recipientName  String?
-  occasion       String?
-  songUrl        String?
-  letter         String
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id            String        @id @default(uuid())
+  title         String
+  slug          String        @unique
+  status        CapsuleStatus @default(DRAFT)
 
-  timelineItems  TimelineItem[]
-  checkoutSession CheckoutSession?
+  // token secreto que só o criador possui — usado pra autenticar
+  // ações de edição (PATCH/DELETE) sem precisar de login
+  editToken     String        @unique @default(uuid())
+
+  recipientName String?
+  occasion      String?
+  songUrl       String?
+  letter        String
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  timelineItems    TimelineItem[]
+  checkoutSession  CheckoutSession?
 
   @@index([slug])
   @@index([status])
+  @@index([editToken])
 }
 
 model TimelineItem {
@@ -54,15 +63,30 @@ model TimelineItem {
 }
 
 model CheckoutSession {
-  id          String                @id @default(uuid())
-  capsuleId   String                @unique
-  provider    String                @default("manual")
-  status      CheckoutSessionStatus @default(PENDING)
-  checkoutUrl String
-  amount      Int                   @default(0)
-  currency    String                @default("BRL")
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id              String                 @id @default(uuid())
+  capsuleId       String                 @unique
+  provider        String                 @default("abacatepay")
+  status          CheckoutSessionStatus  @default(PENDING)
 
-  capsule     Capsule               @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  // ID retornado pela AbacatePay ao criar a cobrança (ex: "pix_char_xxx")
+  // usado para reconciliar o webhook com esta sessão
+  providerChargeId String?               @unique
+
+  // dados retornados pela AbacatePay pra renderizar o PIX no front
+  pixQrCode        String?               // brCodeBase64 (imagem)
+  pixCopyPaste      String?              // brCode (copia e cola)
+
+  amount          Int                    @default(0) // em centavos
+  currency        String                 @default("BRL")
+
+  expiresAt       DateTime?
+  paidAt          DateTime?
+
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  capsule         Capsule                @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  @@index([providerChargeId])
+  @@index([status])
 }
