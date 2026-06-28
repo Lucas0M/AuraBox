@@ -1,8 +1,5 @@
 import { prisma } from "../lib/prisma";
-import {
-  CreateCapsuleInput,
-  UpdateCapsuleInput,
-} from "../validators/capsule.validator";
+import { CreateCapsuleInput, UpdateCapsuleInput } from "../validators/capsule.validator";
 import slugify from "../utils/slugify";
 
 export class CapsuleService {
@@ -22,6 +19,7 @@ export class CapsuleService {
         occasion: input.occasion,
         songUrl: input.songUrl || null,
         letter: input.letter,
+        creatorEmail: input.creatorEmail || null,
         timelineItems: input.timelineItems
           ? {
               create: input.timelineItems.map((item, index) => ({
@@ -83,7 +81,7 @@ export class CapsuleService {
 
   async addTimelineItem(
     capsuleId: string,
-    item: { imageUrl: string; caption: string; sortOrder?: number },
+    item: { imageUrl: string; caption: string; sortOrder?: number }
   ) {
     const count = await prisma.timelineItem.count({ where: { capsuleId } });
 

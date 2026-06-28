@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-   url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 enum CapsuleStatus {
@@ -36,6 +36,7 @@ model Capsule {
   songUrl       String?
   songFileUrl   String? // URL do mp3 enviado via upload (Cloudinary), alternativa ao songUrl
   letter        String
+  creatorEmail  String? // opcional — usado so para reenviar o link de gerenciamento (sem ser login)
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

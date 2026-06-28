@@ -28,9 +28,7 @@ export class CapsulesController {
     const capsule = await capsuleService.findPublicBySlug(slug);
 
     if (!capsule) {
-      return res
-        .status(404)
-        .json({ error: "Cápsula não encontrada ou ainda não está ativa" });
+      return res.status(404).json({ error: "Cápsula não encontrada ou ainda não está ativa" });
     }
 
     return res.json({ capsule });
@@ -84,15 +82,10 @@ export class CapsulesController {
     }
 
     if (!caption || typeof caption !== "string") {
-      return res
-        .status(400)
-        .json({ error: "A legenda (caption) é obrigatória" });
+      return res.status(400).json({ error: "A legenda (caption) é obrigatória" });
     }
 
-    const imageUrl = await uploadService.uploadImage(
-      req.file.buffer,
-      req.file.mimetype,
-    );
+    const imageUrl = await uploadService.uploadImage(req.file.buffer, req.file.mimetype);
 
     const item = await capsuleService.addTimelineItem(id, {
       imageUrl,
@@ -121,15 +114,10 @@ export class CapsulesController {
     const { id } = req.params;
 
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ error: "Nenhum arquivo de áudio foi enviado" });
+      return res.status(400).json({ error: "Nenhum arquivo de áudio foi enviado" });
     }
 
-    const songFileUrl = await uploadService.uploadAudio(
-      req.file.buffer,
-      req.file.mimetype,
-    );
+    const songFileUrl = await uploadService.uploadAudio(req.file.buffer, req.file.mimetype);
     const capsule = await capsuleService.setSongFile(id, songFileUrl);
 
     return res.status(201).json({ capsule });

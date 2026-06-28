@@ -18,11 +18,13 @@ export interface Capsule {
   recipientName: string | null;
   occasion: string | null;
   songUrl: string | null;
-  songFileUrl: string | null; // <- adicionar essa linha
+  songFileUrl: string | null;
   letter: string;
+  creatorEmail: string | null;
   createdAt: string;
   updatedAt: string;
   timelineItems: TimelineItem[];
+  // só vem presente na resposta de criação e em /manage, nunca na visualização pública
   editToken?: string;
 }
 
@@ -48,6 +50,6 @@ export interface CreateCapsuleInput {
   title: string;
   recipientName?: string;
   occasion?: string;
-  songUrl?: string;
   letter: string;
+  creatorEmail?: string;
 }

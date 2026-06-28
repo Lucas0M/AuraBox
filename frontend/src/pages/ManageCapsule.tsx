@@ -41,7 +41,7 @@ export default function ManageCapsule() {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Não foi possível carregar a cápsula.",
+          : "Não foi possível carregar a cápsula."
       );
     } finally {
       setIsLoading(false);
@@ -67,9 +67,7 @@ export default function ManageCapsule() {
       await loadCapsule(); // recarrega pra mostrar a foto recém-adicionada
     } catch (err) {
       setUploadError(
-        err instanceof ApiError
-          ? err.message
-          : "Não foi possível enviar a imagem.",
+        err instanceof ApiError ? err.message : "Não foi possível enviar a imagem."
       );
     } finally {
       setIsUploading(false);
@@ -94,9 +92,7 @@ export default function ManageCapsule() {
       await loadCapsule();
     } catch (err) {
       setSongError(
-        err instanceof ApiError
-          ? err.message
-          : "Não foi possível salvar a música.",
+        err instanceof ApiError ? err.message : "Não foi possível salvar a música."
       );
     } finally {
       setIsSavingSong(false);
@@ -111,9 +107,7 @@ export default function ManageCapsule() {
       await loadCapsule();
     } catch (err) {
       setSongError(
-        err instanceof ApiError
-          ? err.message
-          : "Não foi possível remover a música.",
+        err instanceof ApiError ? err.message : "Não foi possível remover a música."
       );
     } finally {
       setIsSavingSong(false);
@@ -124,9 +118,8 @@ export default function ManageCapsule() {
     return (
       <main className="min-h-screen bg-[#0b0809] text-[#f3ece7] flex items-center justify-center px-6">
         <p className="text-red-400 text-center max-w-md">
-          Não encontramos sua credencial de acesso a essa cápsula neste
-          navegador. Você precisa estar no mesmo dispositivo/navegador usado na
-          criação.
+          Não encontramos sua credencial de acesso a essa cápsula neste navegador.
+          Você precisa estar no mesmo dispositivo/navegador usado na criação.
         </p>
       </main>
     );
@@ -154,9 +147,7 @@ export default function ManageCapsule() {
     <main className="min-h-screen bg-[#0b0809] text-[#f3ece7] px-6 py-12">
       <div className="mx-auto max-w-xl space-y-8">
         <div>
-          <h1 className="text-3xl font-black text-white font-serif mb-1">
-            {capsule.title}
-          </h1>
+          <h1 className="text-3xl font-black text-white font-serif mb-1">{capsule.title}</h1>
           <span
             className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
               capsule.status === "ACTIVE"
@@ -171,9 +162,7 @@ export default function ManageCapsule() {
         {capsule.status === "ACTIVE" && (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 space-y-4">
             <div>
-              <p className="text-sm text-[#bcaea6] mb-2">
-                Link público da sua cápsula:
-              </p>
+              <p className="text-sm text-[#bcaea6] mb-2">Link público da sua cápsula:</p>
               <a
                 href={publicUrl}
                 target="_blank"
@@ -209,9 +198,7 @@ export default function ManageCapsule() {
             </div>
           ) : capsule.songUrl ? (
             <div className="space-y-3">
-              <p className="text-sm text-[#bcaea6] break-all">
-                {capsule.songUrl}
-              </p>
+              <p className="text-sm text-[#bcaea6] break-all">{capsule.songUrl}</p>
               <button
                 onClick={handleRemoveSong}
                 disabled={isSavingSong}
@@ -221,9 +208,7 @@ export default function ManageCapsule() {
               </button>
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">
-              Nenhuma música adicionada ainda.
-            </p>
+            <p className="text-sm text-zinc-500">Nenhuma música adicionada ainda.</p>
           )}
 
           <form
@@ -284,32 +269,18 @@ export default function ManageCapsule() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-white font-serif">
-            Fotos da linha do tempo
-          </h2>
+          <h2 className="text-xl font-bold text-white font-serif">Fotos da linha do tempo</h2>
 
           <div className="grid grid-cols-2 gap-4">
             {capsule.timelineItems.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg overflow-hidden border border-zinc-800"
-              >
-                <img
-                  src={item.imageUrl}
-                  alt={item.caption}
-                  className="w-full aspect-square object-cover"
-                />
-                <p className="p-2 text-xs text-[#bcaea6] truncate">
-                  {item.caption}
-                </p>
+              <div key={item.id} className="rounded-lg overflow-hidden border border-zinc-800">
+                <img src={item.imageUrl} alt={item.caption} className="w-full aspect-square object-cover" />
+                <p className="p-2 text-xs text-[#bcaea6] truncate">{item.caption}</p>
               </div>
             ))}
           </div>
 
-          <form
-            onSubmit={handleAddPhoto}
-            className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4"
-          >
+          <form onSubmit={handleAddPhoto} className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/heic"
@@ -324,9 +295,7 @@ export default function ManageCapsule() {
               maxLength={280}
               className="w-full rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-white placeholder:text-zinc-600 focus:border-rose-600 focus:outline-none"
             />
-            {uploadError && (
-              <p className="text-sm text-red-400">{uploadError}</p>
-            )}
+            {uploadError && <p className="text-sm text-red-400">{uploadError}</p>}
             <button
               type="submit"
               disabled={!file || !caption || isUploading}

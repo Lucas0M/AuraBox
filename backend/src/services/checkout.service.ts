@@ -1,5 +1,8 @@
 import { prisma } from "../lib/prisma";
 import { createPixCharge } from "../lib/abacatepay";
+import { sendManageLinkEmail } from "./email.service";
+import { env } from "../config/env";
+import type { CheckoutSession } from "@prisma/client";
 
 // Preço fixo da cápsula. Coloquei aqui como constante por simplicidade do MVP;
 // se um dia você tiver planos diferentes, isso deve virar um campo de produto no banco.
@@ -9,13 +12,41 @@ const CAPSULE_PRICE_IN_CENTS = 2990; // R$ 29,90
 // deixar cobranças "zumbis" abertas por dias.
 const PIX_EXPIRATION_SECONDS = 60 * 60;
 
+// Lock em memória por capsuleId: serializa chamadas concorrentes de
+// createForCapsule() para a MESMA cápsula, evitando que duas requisições
+// quase simultâneas (ex: o React StrictMode disparando o efeito duas
+// vezes em desenvolvimento, ou um duplo clique do usuário) cheguem a
+// chamar a AbacatePay e escrever no banco em paralelo. Funciona porque
+// o Node executa o código JS de forma single-threaded — não é um lock
+// distribuído (não protege contra múltiplas instâncias do servidor em
+// produção), mas resolve o caso real de concorrência dentro de um
+// processo, que é a origem de todos os bugs P2025/P2002 que já vimos.
+const inFlightRequests = new Map<string, Promise<CheckoutSession>>();
+
 export class CheckoutService {
   /**
    * Cria uma cobrança PIX para a cápsula e abre o CheckoutSession correspondente.
    * Se já existir uma sessão PENDING ainda válida (não expirada), reaproveita
    * o mesmo QR code em vez de gerar um PIX novo a cada clique no botão de pagar.
    */
-  async createForCapsule(capsuleId: string) {
+  async createForCapsule(capsuleId: string): Promise<CheckoutSession> {
+    // Se já existe uma chamada em andamento para essa mesma cápsula,
+    // aguarda ela terminar e retorna o mesmo resultado, em vez de
+    // disparar uma segunda chamada concorrente.
+    const existing = inFlightRequests.get(capsuleId);
+    if (existing) {
+      return existing;
+    }
+
+    const promise = this.doCreateForCapsule(capsuleId).finally(() => {
+      inFlightRequests.delete(capsuleId);
+    });
+
+    inFlightRequests.set(capsuleId, promise);
+    return promise;
+  }
+
+  private async doCreateForCapsule(capsuleId: string) {
     const capsule = await prisma.capsule.findUnique({
       where: { id: capsuleId },
       include: { checkoutSession: true },
@@ -42,12 +73,13 @@ export class CheckoutService {
 
     if (capsule.checkoutSession && capsule.checkoutSession.status === "PENDING") {
       // Sessão antiga expirou (ou nunca teve expiresAt definido por falha anterior) —
-      // removemos pra não deixar lixo no banco antes de criar a nova
-      await prisma.checkoutSession.delete({ where: { id: capsule.checkoutSession.id } });
+      // removemos pra não deixar lixo no banco antes de criar a nova.
+      await prisma.checkoutSession.deleteMany({ where: { id: capsule.checkoutSession.id } });
     }
 
-    // Primeiro criamos a sessão no nosso banco pra termos um ID nosso
-    // (vamos usá-lo como externalId na AbacatePay, pra reconciliar no webhook)
+    // Graças ao lock acima, não há mais concorrência real chegando aqui
+    // para o mesmo capsuleId — mas mantemos o create simples e direto,
+    // já que o cenário de corrida foi eliminado na entrada do método.
     const session = await prisma.checkoutSession.create({
       data: {
         capsuleId,
@@ -84,8 +116,14 @@ export class CheckoutService {
 
       return updatedSession;
     } catch (error) {
-      // Se a AbacatePay falhar, não deixamos uma sessão "fantasma" no banco
-      await prisma.checkoutSession.delete({ where: { id: session.id } });
+      // Loga o erro ORIGINAL (provavelmente da AbacatePay) antes de
+      // qualquer outra coisa — sem isso, um erro no delete abaixo mascara
+      // a causa raiz real, que é o que importa pra debugar.
+      console.error("Falha ao criar cobrança PIX na AbacatePay:", error);
+
+      // Se a AbacatePay falhar, não deixamos uma sessão "fantasma" no banco.
+      await prisma.checkoutSession.deleteMany({ where: { id: session.id } });
+
       throw error;
     }
   }
@@ -112,7 +150,7 @@ export class CheckoutService {
       return session; // já processado, idempotência
     }
 
-    const [updatedSession] = await prisma.$transaction([
+    const [updatedSession, updatedCapsule] = await prisma.$transaction([
       prisma.checkoutSession.update({
         where: { id: checkoutSessionId },
         data: { status: "PAID", paidAt: new Date() },
@@ -122,6 +160,21 @@ export class CheckoutService {
         data: { status: "ACTIVE" },
       }),
     ]);
+
+    // Dispara o e-mail de recovery (link de gerenciamento), só se o
+    // criador informou um e-mail na criação. Não usamos await aqui de
+    // forma bloqueante no fluxo principal — disparamos e seguimos, já
+    // que uma falha de e-mail não deve impedir a confirmação do pagamento
+    // (que já está persistida nesse ponto). O próprio sendManageLinkEmail
+    // já loga internamente qualquer erro, sem lançar.
+    if (updatedCapsule.creatorEmail) {
+      const manageUrl = `${env.FRONTEND_URL}/capsulas/${updatedCapsule.id}/gerenciar`;
+      void sendManageLinkEmail({
+        to: updatedCapsule.creatorEmail,
+        capsuleTitle: updatedCapsule.title,
+        manageUrl,
+      });
+    }
 
     return updatedSession;
   }

@@ -12,11 +12,7 @@ interface LetterModalProps {
  * clicar fora ou apertar Esc. Usa portal pra renderizar no topo da árvore
  * do DOM, evitando problemas de z-index/overflow de containers pais.
  */
-export default function LetterModal({
-  isOpen,
-  onClose,
-  letter,
-}: LetterModalProps) {
+export default function LetterModal({ isOpen, onClose, letter }: LetterModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -58,6 +54,6 @@ export default function LetterModal({
         </p>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }
