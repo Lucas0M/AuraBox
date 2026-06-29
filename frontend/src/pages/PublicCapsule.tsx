@@ -24,7 +24,7 @@ export default function PublicCapsule() {
         setError(
           err instanceof ApiError && err.status === 404
             ? "Esta cápsula não existe ou ainda não foi paga."
-            : "Não foi possível carregar a cápsula."
+            : "Não foi possível carregar a cápsula.",
         );
       })
       .finally(() => setIsLoading(false));
@@ -55,7 +55,9 @@ export default function PublicCapsule() {
               {capsule.occasion}
             </span>
           )}
-          <h1 className="text-4xl font-black text-white font-serif">{capsule.title}</h1>
+          <h1 className="text-4xl font-black text-white font-serif">
+            {capsule.title}
+          </h1>
           {capsule.recipientName && (
             <p className="text-[#bcaea6]">Para {capsule.recipientName}</p>
           )}
@@ -89,7 +91,7 @@ export default function PublicCapsule() {
             onClick={() => setIsLetterOpen(true)}
             className="inline-flex items-center gap-2 rounded-full border border-rose-900/40 bg-rose-950/20 px-6 py-2.5 text-sm font-bold text-rose-300 hover:bg-rose-950/40 transition"
           >
-            Ler carta completa
+            Expandir
             <span aria-hidden>↗</span>
           </button>
         </div>

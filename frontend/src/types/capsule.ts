@@ -51,5 +51,6 @@ export interface CreateCapsuleInput {
   recipientName?: string;
   occasion?: string;
   letter: string;
+  songUrl: string;
   creatorEmail?: string;
 }

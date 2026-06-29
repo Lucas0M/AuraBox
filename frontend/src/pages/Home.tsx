@@ -74,8 +74,10 @@ export default function Home() {
         <header className="flex items-center justify-between border-b border-zinc-800/50 pb-8">
           <div className="flex items-center gap-2">
             <span className="text-3xl font-black tracking-tight text-white font-serif italic">
-              Aura
-              <span className="text-rose-500 font-sans not-italic font-black">Box</span>
+              Mimo
+              <span className="text-rose-500 font-sans not-italic font-black">
+                Box
+              </span>
             </span>
           </div>
           <div className="text-sm font-medium tracking-wide text-rose-300 font-serif italic">
@@ -115,8 +117,12 @@ export default function Home() {
             <div className="mt-14 grid gap-6 sm:grid-cols-3 pt-8 border-t border-zinc-800/60">
               {benefits.map((item) => (
                 <div key={item.title} className="flex flex-col space-y-2">
-                  <h4 className="text-lg font-bold text-white font-serif">{item.title}</h4>
-                  <p className="text-base leading-relaxed text-[#bcaea6]">{item.text}</p>
+                  <h4 className="text-lg font-bold text-white font-serif">
+                    {item.title}
+                  </h4>
+                  <p className="text-base leading-relaxed text-[#bcaea6]">
+                    {item.text}
+                  </p>
                 </div>
               ))}
             </div>
@@ -148,17 +154,25 @@ export default function Home() {
                       style={{ animationDuration: "5s" }}
                     />
                     <div>
-                      <p className="text-xs font-bold text-rose-100">Sua Música Favorita.mp3</p>
-                      <p className="text-[10px] text-zinc-500">Trilha Sonora Ativa</p>
+                      <p className="text-xs font-bold text-rose-100">
+                        Sua Música Favorita.mp3
+                      </p>
+                      <p className="text-[10px] text-zinc-500">
+                        Trilha Sonora Ativa
+                      </p>
                     </div>
                   </div>
-                  <span className="text-xs text-rose-400 font-bold animate-pulse">● Tocado</span>
+                  <span className="text-xs text-rose-400 font-bold animate-pulse">
+                    ● Tocado
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/40 overflow-hidden">
                   <div className="aspect-[4/3] bg-gradient-to-b from-[#24171a] to-[#140e10] flex flex-col items-center justify-center text-rose-900/60 text-xs font-bold">
                     <span className="text-xl mb-1">📸</span>
-                    <span className="text-zinc-600">[ Sua Foto Antiga Aqui ]</span>
+                    <span className="text-zinc-600">
+                      [ Sua Foto Antiga Aqui ]
+                    </span>
                   </div>
                   <div className="p-3 bg-[#0d090a]">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
@@ -199,8 +213,12 @@ export default function Home() {
                 className="rounded-2xl border border-zinc-900 bg-gradient-to-b from-zinc-900/30 to-transparent p-6 space-y-3 transition hover:border-rose-950/50"
               >
                 <div className="h-1 w-10 rounded-full bg-gradient-to-r from-rose-500 to-amber-400" />
-                <h3 className="text-xl font-bold text-white font-serif">{demo.title}</h3>
-                <p className="text-lg leading-relaxed text-[#bcaea6]">{demo.text}</p>
+                <h3 className="text-xl font-bold text-white font-serif">
+                  {demo.title}
+                </h3>
+                <p className="text-lg leading-relaxed text-[#bcaea6]">
+                  {demo.text}
+                </p>
               </div>
             ))}
           </div>
@@ -230,7 +248,9 @@ export default function Home() {
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-black text-rose-400">⭐ {review.score}</span>
+                    <span className="text-base font-black text-rose-400">
+                      ⭐ {review.score}
+                    </span>
                     <span className="rounded-full bg-rose-950/40 px-2.5 py-0.5 text-xs font-bold text-rose-300 border border-rose-900/30">
                       {review.tag}
                     </span>
@@ -273,7 +293,7 @@ export default function Home() {
         </section>
 
         <footer className="mt-24 text-center text-sm font-medium text-zinc-600 tracking-wider">
-          &copy; {new Date().getFullYear()} AuraBox. Feito com carinho.
+          &copy; {new Date().getFullYear()} MimoBox. Feito com carinho.
         </footer>
       </section>
     </main>
