@@ -3,8 +3,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // DATABASE_URL: conexão via pooler do Neon (com -pooler no hostname),
+  // usada pelo Prisma Client em runtime — mais eficiente para conexões
+  // de processos persistentes como no Render.
+  url       = env("DATABASE_URL")
+  // DIRECT_URL: conexão direta (sem -pooler), usada só pelo Prisma CLI
+  // para migrations — o PgBouncer do Neon não suporta as operações que
+  // o Prisma Migrate precisa fazer.
+  directUrl = env("DIRECT_URL")
 }
 
 enum CapsuleStatus {
